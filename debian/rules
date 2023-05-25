@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	gcc -o lights lights.c
+	gcc -o fpc1020 fpc1020.c virtual-keyboard-unstable-v1-protocol.c -lwayland-client -lxkbcommon
+
+override_dh_auto_install:
+	dh_auto_install
+	install -D -m 0755 lights debian/op3-helpers/usr/bin/lights
+	install -D -m 0755 fpc1020 debian/op3-helpers/usr/bin/fpc1020
+
+override_dh_installsystemd:
+	dh_installsystemd -pop3-helpers --name=lights lights.service --no-start
+	dh_installsystemd -pop3-helpers --name=fpc1020 fpc1020.service --no-start
