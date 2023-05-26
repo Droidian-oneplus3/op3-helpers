@@ -1,10 +1,2 @@
-[Unit]
-Description=fingerprint touch button service
-After=sm.puri.Phosh.service
-
-[Service]
-Type=simple
-ExecStart=/usr/bin/fpc1020
-
-[Install]
-WantedBy=gnome-session.target.wants
+/usr/lib/systemd/user/fpc1020.service /usr/lib/systemd/user/gnome-session.target.wants/fpc1020.service
+/usr/lib/systemd/user/tristate.service /usr/lib/systemd/user/gnome-session.target.wants/tristate.service

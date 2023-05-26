@@ -5,6 +5,7 @@ After=phosh.service
 
 [Service]
 Type=simple
+Restart=on-failure
 ExecStart=/usr/bin/lights
 
 [Install]
