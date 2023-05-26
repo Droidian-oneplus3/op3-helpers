@@ -5,3 +5,4 @@ After=sm.puri.Phosh.service
 [Service]
 Type=simple
 ExecStart=/usr/bin/fpc1020
+Restart=always

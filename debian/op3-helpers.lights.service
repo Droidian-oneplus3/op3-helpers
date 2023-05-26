@@ -5,8 +5,8 @@ After=phosh.service
 
 [Service]
 Type=simple
-Restart=on-failure
 ExecStart=/usr/bin/lights
+Restart=always
 
 [Install]
 WantedBy=graphical.target
