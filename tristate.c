@@ -1,122 +1,89 @@
 #include <fcntl.h>
-#include <stdarg.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 #include <sys/inotify.h>
-#include <linux/limits.h>
 #include <pulse/pulseaudio.h>
-#include <sys/stat.h>
 #include <linux/input.h>
-#include <fcntl.h>
-
-#define STOP ((void *)(1))
-
-#define SINK_NAME       "@DEFAULT_SINK@"
-#define SOURCE_NAME     "@DEFAULT_SOURCE@"
+#include <libnotify/notify.h>
 
 #define DEVICE_FILE "/dev/input/event1"
 
-static pa_mainloop_api *api = NULL;
+#define NAME "tristate"
 
-static void error(const char *fmt, ...) {
-  va_list ap;
+pa_mainloop *mainloop = NULL;
 
-  va_start(ap, fmt);
-  fputs("mute: ", stderr);
-  vfprintf(stderr, fmt, ap);
-  fputc('\n', stderr);
-  va_end(ap);
+enum volume_action { VOLUME_NO_ACTION, SET_VOLUME, DECREASE_VOLUME, INCREASE_VOLUME };
+enum volume_action volume_action = VOLUME_NO_ACTION;
+
+union volume_value {
+    pa_volume_t volume;
+};
+
+enum mute_action { MUTE_NO_ACTION, MUTE, UNMUTE, TOGGLE_MUTE };
+enum mute_action mute_action = MUTE_NO_ACTION;
+
+void on_success_quit(pa_context *context, int success, void *userdata) {
+    pa_mainloop_quit(mainloop, 0);
 }
 
-static void set_status(int status) {
-  api->quit(api, status);
+void on_sink_info(pa_context *context, const pa_sink_info *info, int eol, void *userdata) {
+    if (info != NULL) {
+        if (mute_action == MUTE) {
+            pa_context_success_cb_t callback =
+                (volume_action == VOLUME_NO_ACTION) ? on_success_quit : NULL;
+            pa_context_set_sink_mute_by_index(context, info->index, 1,
+                                              callback, NULL);
+        }
+
+        if (mute_action == UNMUTE) {
+            pa_context_set_sink_mute_by_index(context, info->index, 0,
+                                              on_success_quit, NULL);
+        }
+
+        NotifyNotification *notification = notify_notification_new("Audio status", (mute_action == MUTE) ? "Device has been muted" : "Device has been unmuted", NULL);
+        notify_notification_set_timeout(notification, 2000);
+
+        notify_notification_set_hint_string(notification, "category", "device");
+        notify_notification_set_urgency(notification, NOTIFY_URGENCY_LOW);
+
+        notify_notification_set_hint(notification, "transient", g_variant_new_boolean(TRUE));
+
+        notify_notification_show(notification, NULL);
+        g_object_unref(notification);
+    }
 }
 
-static void complete_callback(pa_context *context, int success, void *disconnect) {
-  if (!success) {
-    error("failure: %s", pa_strerror(pa_context_errno(context)));
-    set_status(EXIT_FAILURE);
-  }
-  if (disconnect) {
-    pa_context_disconnect(context);
-  }
+void on_server_info(pa_context *context, const pa_server_info *info, void *userdata) {
+    pa_context_get_sink_info_by_name(context, info->default_sink_name, on_sink_info, NULL);
 }
 
-static void audio_callback(pa_context *context, const pa_sink_info *info, int eol, void *userdata) {
-  if (eol < 0) {
-    error("failed to get sink information: %s", pa_strerror(pa_context_errno(context)));
-    set_status(EXIT_FAILURE);
-    return;
-  }
-  if (eol == 0) {
-    pa_operation_unref(pa_context_set_sink_mute_by_name(context, SINK_NAME, !info->mute, complete_callback, STOP));
-  }
+void on_context_state_change(pa_context *context, void *userdata) {
+    pa_context_state_t state = pa_context_get_state(context);
+    if (state == PA_CONTEXT_READY) {
+        pa_context_get_server_info(context, on_server_info, NULL);
+    }
 }
 
-static void context_state_callback(pa_context *context, void *userdata) {
-  pa_operation *op = NULL;
+void toggle_mute(int mute_action) {
+    mainloop = pa_mainloop_new();
+    pa_mainloop_api *pa_mainloop_api = pa_mainloop_get_api(mainloop);
+    pa_context *pa_context = pa_context_new(pa_mainloop_api, NAME);
+    pa_context_set_state_callback(pa_context, on_context_state_change, NULL);
+    pa_context_connect(pa_context, NULL, PA_CONTEXT_NOAUTOSPAWN, NULL);
 
-  switch (pa_context_get_state(context)) {
-    case PA_CONTEXT_CONNECTING:
-    case PA_CONTEXT_UNCONNECTED:
-    case PA_CONTEXT_AUTHORIZING:
-    case PA_CONTEXT_SETTING_NAME:
-      break;
-
-    case PA_CONTEXT_READY:
-      op = pa_context_get_sink_info_by_name(context, SINK_NAME, audio_callback, NULL);
-      if (op != NULL) {
-        pa_operation_unref(op);
-      }
-      break;
-
-    case PA_CONTEXT_TERMINATED:
-      set_status(EXIT_SUCCESS);
-      break;
-    case PA_CONTEXT_FAILED:
-      error("connection failure: %s", pa_strerror(pa_context_errno(context)));
-      set_status(EXIT_FAILURE);
-      break;
-  }
+    int ret = 1;
+    pa_mainloop_run(mainloop, &ret);
 }
 
-static int toggle(void) {
-  int status = EXIT_FAILURE;
+void mute() {
+    mute_action = MUTE;
+    toggle_mute(mute_action);
+}
 
-  pa_mainloop *m = NULL;
-  pa_context *context = NULL;
-
-  if ((m = pa_mainloop_new()) == NULL) {
-    error("pa_mainloop_new failed");
-    goto quit;
-  }
-  if ((api = pa_mainloop_get_api(m)) == NULL) {
-    error("pa_mainloop_get_api failed");
-    goto quit;
-  }
-  if ((context = pa_context_new(api, NULL)) == NULL) {
-    error("pa_context_new failed");
-    goto quit;
-  }
-  pa_context_set_state_callback(context, context_state_callback, NULL);
-  if (pa_context_connect(context, NULL, 0, NULL) < 0) {
-    error("pa_context_connect failed: %s", pa_strerror(pa_context_errno(context)));
-    goto quit;
-  }
-  if (pa_mainloop_run(m, &status) < 0) {
-    error("pa_mainloop_run failed");
-  }
-quit:
-  if (context != NULL) {
-    pa_context_unref(context);
-  }
-  if (m != NULL) {
-    pa_mainloop_free(m);
-  }
-  return status;
+void unmute() {
+    mute_action = UNMUTE;
+    toggle_mute(mute_action);
 }
 
 int main(int argc, char *argv[]) {
@@ -131,6 +98,11 @@ int main(int argc, char *argv[]) {
     int wd = inotify_add_watch(fd_notify, DEVICE_FILE, IN_MODIFY);
     if (wd < 0) {
         printf("Error: inotify_add_watch failed\n");
+        return 1;
+    }
+
+    if (!notify_init("tristate")) {
+        fprintf(stderr, "Failed to initialize libnotify\n");
         return 1;
     }
 
@@ -150,13 +122,16 @@ int main(int argc, char *argv[]) {
             if (ev.type == EV_KEY && ev.value == 1) {
                 switch (ev.code) {
                     case 600:
-                        toggle();
+                        unmute();
+                        system("pactl set-source-mute @DEFAULT_SOURCE@ 0");
                         break;
                     case 601:
-                        toggle();
+                        mute();
+                        system("pactl set-source-mute @DEFAULT_SOURCE@ 0");
                         break;
                     case 602:
-                        toggle();
+                        mute();
+                        system("pactl set-source-mute @DEFAULT_SOURCE@ 1");
                         break;
                     default:
                         break;
