@@ -9,6 +9,8 @@
 #include <linux/limits.h>
 #include <pulse/pulseaudio.h>
 #include <sys/stat.h>
+#include <linux/input.h>
+#include <fcntl.h>
 
 #define STOP ((void *)(1))
 
@@ -118,15 +120,15 @@ quit:
 }
 
 int main(int argc, char *argv[]) {
-    int fd = inotify_init();
+    struct input_event ev;
 
-    if (fd < 0) {
+    int fd_notify = inotify_init();
+    if (fd_notify < 0) {
         printf("Error: inotify_init failed\n");
         return 1;
     }
 
-    int wd = inotify_add_watch(fd, DEVICE_FILE, IN_MODIFY);
-
+    int wd = inotify_add_watch(fd_notify, DEVICE_FILE, IN_MODIFY);
     if (wd < 0) {
         printf("Error: inotify_add_watch failed\n");
         return 1;
@@ -136,15 +138,37 @@ int main(int argc, char *argv[]) {
     ssize_t len;
 
     while (1) {
-        len = read(fd, buffer, sizeof(buffer));
-
+        len = read(fd_notify, buffer, sizeof(buffer));
         if (len > 0) {
-            toggle();
+            int fd_device = open(DEVICE_FILE, O_RDONLY);
+            if (fd_device == -1) {
+                perror("Cannot access input device");
+                exit(EXIT_FAILURE);
+            }
+
+            read(fd_device, &ev, sizeof(struct input_event));
+            if (ev.type == EV_KEY && ev.value == 1) {
+                switch (ev.code) {
+                    case 600:
+                        toggle();
+                        break;
+                    case 601:
+                        toggle();
+                        break;
+                    case 602:
+                        toggle();
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            close(fd_device);
         }
     }
 
-    inotify_rm_watch(fd, wd);
-    close(fd);
+    inotify_rm_watch(fd_notify, wd);
+    close(fd_notify);
 
     return 0;
 }
