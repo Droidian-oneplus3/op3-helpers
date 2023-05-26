@@ -1,22 +1,11 @@
 #include "virtkey.c"
 #include <sys/inotify.h>
+#include <linux/input.h>
 
-#define DEVICE_FILE "/dev/input/event2"
+#define DEVICE_FILE "/dev/input/event5"
 
 int main() {
-	int fd = inotify_init();
-
-	if (fd < 0) {
-		printf("Error: inotify_init failed\n");
-		return 1;
-	}
-
-	int wd = inotify_add_watch(fd, DEVICE_FILE, IN_MODIFY);
-
-	if (wd < 0) {
-		printf("Error: inotify_add_watch failed\n");
-		return 1;
-	}
+        struct input_event ev;
 
 	char buffer[sizeof(struct inotify_event) + 255];
 	ssize_t len;
@@ -24,7 +13,7 @@ int main() {
 	struct wtype wtype;
 	memset(&wtype, 0, sizeof(wtype));
 
-	const char* newArgv[] = {"fpc1020", "-M", "win", "-k", "s"};
+	const char* newArgv[] = {"fpc1020", "-M", "win", "-k", "m"};
 	int newArgc = sizeof(newArgv) / sizeof(newArgv[0]);
 
 	parse_args(&wtype, newArgc, newArgv);
@@ -49,17 +38,28 @@ int main() {
 		wtype.manager, wtype.seat
 	);
 
-	while (1) {
-		len = read(fd, buffer, sizeof(buffer));
+        while (1) {
+            if (len > 0) {
+                int fd_device = open(DEVICE_FILE, O_RDONLY);
+                if (fd_device == -1) {
+                    perror("Cannot access input device");
+                    exit(EXIT_FAILURE);
+                }
 
-		if (len > 0) {
-			upload_keymap(&wtype);
-			run_commands(&wtype);
-		}
-	}
-
-	inotify_rm_watch(fd, wd);
-	close(fd);
+                read(fd_device, &ev, sizeof(struct input_event));
+                if (ev.type == EV_KEY && ev.value == 1) {
+                    switch (ev.code) {
+                        case 580:
+                            upload_keymap(&wtype);
+                            run_commands(&wtype);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                close(fd_device);
+            }
+        }
 
 	free(wtype.commands);
 	free(wtype.keymap);

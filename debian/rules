@@ -6,13 +6,16 @@
 override_dh_auto_build:
 	gcc -o lights lights.c
 	gcc -o fpc1020 fpc1020.c virtual-keyboard-unstable-v1-protocol.c -lwayland-client -lxkbcommon
+	gcc -o s1302 s1302.c virtual-keyboard-unstable-v1-protocol.c -lwayland-client -lxkbcommon
 	gcc -o tristate tristate.c `pkg-config --cflags --libs libnotify` -lpulse -o tristate
 
 override_dh_auto_install:
 	dh_auto_install
 	install -D -m 0755 lights debian/op3-helpers/usr/bin/lights
 	install -D -m 0755 fpc1020 debian/op3-helpers/usr/bin/fpc1020
+	install -D -m 0755 s1302 debian/op3-helpers/usr/bin/s1302
 	install -D -m 0644 debian/op3-helpers.fpc1020.service debian/op3-helpers/usr/lib/systemd/user/fpc1020.service
+	install -D -m 0644 debian/op3-helpers.s1302.service debian/op3-helpers/usr/lib/systemd/user/s1302.service
 	install -D -m 0755 tristate debian/op3-helpers/usr/bin/tristate
 	install -D -m 0644 debian/op3-helpers.tristate.service debian/op3-helpers/usr/lib/systemd/user/tristate.service
 
