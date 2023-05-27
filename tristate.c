@@ -27,8 +27,7 @@ int notification_count = 0;
 
 typedef struct node {
     char command[100];
-    struct node *next;
-} Node;
+    struct node *next;45} Node;
 
 Node *front = NULL;
 Node *rear = NULL;
@@ -108,7 +107,7 @@ void on_sink_info(pa_context *context, const pa_sink_info *info, int eol, void *
                                               on_success_quit, NULL);
         }
 
-        NotifyNotification *notification = notify_notification_new("Audio status", (mute_action == MUTE) ? "Device has been muted" : "Device has been unmuted", NULL);
+        NotifyNotification *notification = notify_notification_new("Audio status", (mute_action == MUTE) ? "Device has been muted (Input/Output)" : "Device has been unmuted (Input/Output)", NULL);
         notify_notification_set_timeout(notification, 2000);
 
         notify_notification_set_hint_string(notification, "category", "device");
@@ -204,8 +203,18 @@ int main(int argc, char *argv[]) {
                         enqueue("pactl set-source-mute @DEFAULT_SOURCE@ 0");
                         break;
                     case 601:
-                        mute();
-                        enqueue("pactl set-source-mute @DEFAULT_SOURCE@ 0");
+                        unmute();
+                        enqueue("pactl set-source-mute @DEFAULT_SOURCE@ 1");
+                        NotifyNotification *mic_mute_notification = notify_notification_new("Audio status", "Audio has been muted (Input)", NULL);
+                        notify_notification_set_timeout(mic_mute_notification, 2000);
+
+                        notify_notification_set_hint_string(mic_mute_notification, "category", "device");
+                        notify_notification_set_urgency(mic_mute_notification, NOTIFY_URGENCY_LOW);
+
+                        notify_notification_set_hint(mic_mute_notification, "transient", g_variant_new_boolean(TRUE));
+
+                        notify_notification_show(mic_mute_notification, NULL);
+                        g_object_unref(mic_mute_notification);
                         break;
                     case 602:
                         mute();

@@ -7,7 +7,7 @@ override_dh_auto_build:
 	gcc -o lights lights.c
 	gcc -o fpc1020 fpc1020.c virtual-keyboard-unstable-v1-protocol.c -lwayland-client -lxkbcommon
 	gcc -o s1302 s1302.c virtual-keyboard-unstable-v1-protocol.c -lwayland-client -lxkbcommon
-	gcc -o tristate tristate.c `pkg-config --cflags --libs libnotify` -lpulse -o tristate
+	gcc -o tristate tristate.c `pkg-config --cflags --libs libnotify` -lpulse
 	gcc -o getvol getvol.c -lpulse -lm
 	gcc -o setvol setvol.c -lpulse
 	gcc -o wifiman wifiman.c
