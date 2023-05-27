@@ -10,6 +10,7 @@ override_dh_auto_build:
 	gcc -o tristate tristate.c `pkg-config --cflags --libs libnotify` -lpulse -o tristate
 	gcc -o getvol getvol.c -lpulse -lm
 	gcc -o setvol setvol.c -lpulse
+	gcc -o wifiman wifiman.c
 
 override_dh_auto_install:
 	dh_auto_install
@@ -24,7 +25,8 @@ override_dh_auto_install:
 	install -D -m 0755 setvol debian/op3-helpers/usr/bin/setvol
 	install -D -m 0644 pulseaudio.service.d/30-get-vol.conf debian/op3-helpers/etc/systemd/user/pulseaudio.service.d/30-get-vol.conf
 	install -D -m 0644 pulseaudio.service.d/40-set-vol.conf debian/op3-helpers/etc/systemd/user/pulseaudio.service.d/40-set-vol.conf
+	install -D -m 0755 wifiman debian/op3-helpers/usr/bin/wifiman
 
 override_dh_installsystemd:
 	dh_installsystemd -pop3-helpers --name=lights lights.service --no-start
-
+	dh_installsystemd -pop3-helpers --name=wifiman wifiman.service --no-start
