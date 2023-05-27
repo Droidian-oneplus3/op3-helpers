@@ -1,5 +1,5 @@
-op3-helpers (0.2) main; urgency=medium
+op3-helpers (0.3) main; urgency=medium
 
-  * fix the issue with tristate notifications not working on pulse disconnecting
+  * add the implementation for audio volume restoration upon reboot
 
- -- Bardia Moshiri <fakeshell@bardia.tech>  Fri, 26 May 2023 15:57:41 -0400
+ -- Bardia Moshiri <fakeshell@bardia.tech>  Fri, 26 May 2023 21:26:26 -0400
