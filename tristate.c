@@ -27,7 +27,8 @@ int notification_count = 0;
 
 typedef struct node {
     char command[100];
-    struct node *next;45} Node;
+    struct node *next;
+} Node;
 
 Node *front = NULL;
 Node *rear = NULL;
