@@ -2,7 +2,7 @@ Source: op3-helpers
 Maintainer: Bardia Moshiri
 Section: metapackages
 Priority: optional
-Build-Depends: debhelper, inotify-tools, libwayland-dev, libxkbcommon0, libpulse-dev, libpulse-mainloop-glib0, libnotify-dev
+Build-Depends: debhelper, inotify-tools, libwayland-dev, libxkbcommon-dev, libpulse-dev, libpulse-mainloop-glib0, libnotify-dev
 Standards-Version: 4.5.0.3
 Vcs-Browser: https://github.com/droidian-oneplus3/op3-helpers
 Vcs-Git: https://github.com/droidian-oneplus3/op3-helpers.git
@@ -12,7 +12,7 @@ Architecture: all
 Depends: ${misc:Depends},
          inotify-tools,
          libwayland-dev,
-         libxkbcommon0,
+         libxkbcommon-dev,
          libpulse-dev,
          libpulse-mainloop-glib0,
          libnotify-dev,
