@@ -2,4 +2,5 @@
 /usr/lib/systemd/user/s1302.service /usr/lib/systemd/user/gnome-session.target.wants/s1302.service
 /usr/lib/systemd/user/tristate.service /usr/lib/systemd/user/gnome-session.target.wants/tristate.service
 /usr/lib/systemd/system/wifiman.service /etc/systemd/system/multi-user.target.wants/wifiman.service
+/usr/lib/systemd/system/btscanner.service /etc/systemd/system/multi-user.target.wants/btscanner.service
 /usr/lib/systemd/system/lights.service /etc/systemd/system/graphical.target.wants/lights.service

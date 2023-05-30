@@ -1,5 +1,5 @@
-op3-helpers (0.5) main; urgency=medium
+op3-helpers (0.6) main; urgency=medium
 
-  * Fixed long boot times.
+  * add the bluetooth scan helper program
 
- -- Bardia Moshiri <fakeshell@bardia.tech>  Sun, 28 May 2023 12:26:06 -0400
+ -- Bardia Moshiri <fakeshell@bardia.tech>  Tue, 30 May 2023 16:03:20 -0400
