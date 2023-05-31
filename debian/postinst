@@ -7,4 +7,4 @@ echo "Giving the user droidian access to /var/lib/restore-volume/"
 chown droidian:droidian -R /var/lib/restore-volume/
 chmod 777 -R /var/lib/restore-volume
 
-systemctl daemon-reload
+systemctl daemon-reload || true
